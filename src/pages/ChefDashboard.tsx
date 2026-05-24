@@ -15,6 +15,9 @@ export default function ChefDashboard({ onGoBack, onManageDishes }: Props) {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
   const [newOrderId, setNewOrderId] = useState<string | null>(null);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [pushToken, setPushToken] = useState('');
+  const [tokenSaved, setTokenSaved] = useState(false);
 
   const fetchOrders = useCallback(() => {
     api.getOrders().then(setOrders).catch(() => {});
@@ -22,7 +25,16 @@ export default function ChefDashboard({ onGoBack, onManageDishes }: Props) {
 
   useEffect(() => {
     fetchOrders();
+    api.getSettings().then(s => {
+      if (s.pushToken) setPushToken(s.pushToken);
+    }).catch(() => {});
   }, [fetchOrders]);
+
+  const saveToken = async () => {
+    await api.updatePushToken(pushToken.trim());
+    setTokenSaved(true);
+    setTimeout(() => setTokenSaved(false), 2000);
+  };
 
   const handleNewOrder = useCallback((order: Order) => {
     setOrders(prev => {
@@ -82,6 +94,9 @@ export default function ChefDashboard({ onGoBack, onManageDishes }: Props) {
         >
           {audioEnabled ? '🔔' : '🔕'}
         </button>
+        <button className={styles.soundBtn} onClick={() => setShowSettings(true)}>
+          ⚙️
+        </button>
       </div>
 
       {pendingCount > 0 && (
@@ -133,6 +148,33 @@ export default function ChefDashboard({ onGoBack, onManageDishes }: Props) {
           <span className={styles.navLabel}>菜品管理</span>
         </button>
       </nav>
+
+      {showSettings && (
+        <div className={styles.settingsOverlay} onClick={() => setShowSettings(false)}>
+          <div className={styles.settingsModal} onClick={e => e.stopPropagation()}>
+            <div className={styles.settingsHeader}>
+              <span>🔔 微信推送设置</span>
+              <button className={styles.settingsClose} onClick={() => setShowSettings(false)}>✕</button>
+            </div>
+            <div className={styles.settingsBody}>
+              <p className={styles.settingsHelp}>
+                1. 微信搜索「<b>pushplus</b>」公众号并关注<br/>
+                2. 回复「<b>token</b>」获取你的推送码<br/>
+                3. 粘贴到下方即可收到订单通知
+              </p>
+              <input
+                className={styles.settingsInput}
+                placeholder="粘贴 PushPlus Token"
+                value={pushToken}
+                onChange={e => setPushToken(e.target.value)}
+              />
+              <button className={styles.settingsSave} onClick={saveToken}>
+                {tokenSaved ? '✅ 已保存' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

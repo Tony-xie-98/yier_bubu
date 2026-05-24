@@ -12,8 +12,41 @@ function saveOrders(orders: Order[]) {
   writeJSON('orders.json', orders);
 }
 
+function getSettings(): { pushToken?: string } {
+  return readJSON<{ pushToken?: string }>('settings.json', {});
+}
+
 // SSE clients
 const clients = new Set<Response>();
+
+async function sendWxPush(order: Order) {
+  const settings = getSettings();
+  if (!settings.pushToken) return;
+
+  const itemsText = order.items
+    .map(i => `${i.name} ×${i.quantity}`)
+    .join('\n');
+
+  try {
+    await fetch('http://www.pushplus.plus/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: settings.pushToken,
+        title: `🐻 一二下单啦！¥${order.totalPrice}`,
+        content: [
+          `## 🛒 新订单`,
+          ``,
+          ...order.items.map(i => `- ${i.name} ×${i.quantity}  ¥${i.price * i.quantity}`),
+          ``,
+          `**合计：¥${order.totalPrice}**`,
+          order.note ? `备注：${order.note}` : '',
+        ].join('\n'),
+        template: 'markdown',
+      }),
+    });
+  } catch { /* push failed, ignore */ }
+}
 
 // GET /api/orders
 router.get('/', (_req: Request, res: Response) => {
@@ -22,7 +55,7 @@ router.get('/', (_req: Request, res: Response) => {
 });
 
 // POST /api/orders
-router.post('/', (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
   const order: Order = req.body;
   if (!order.id || !order.items?.length) {
     res.status(400).json({ error: 'Invalid order' });
@@ -37,6 +70,9 @@ router.post('/', (req: Request, res: Response) => {
   for (const client of clients) {
     client.write(`data: ${data}\n\n`);
   }
+
+  // Send WeChat push
+  sendWxPush(order);
 
   res.json({ success: true });
 });
@@ -54,7 +90,6 @@ router.put('/:id', (req: Request, res: Response) => {
   order.status = status;
   saveOrders(orders);
 
-  // Notify SSE clients about status change
   const data = JSON.stringify({ type: 'order_update', order });
   for (const client of clients) {
     client.write(`data: ${data}\n\n`);
@@ -75,7 +110,6 @@ router.get('/events', (_req: Request, res: Response) => {
   res.write(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
   clients.add(res);
 
-  // Send heartbeat every 30s
   const heartbeat = setInterval(() => {
     res.write(`: heartbeat\n\n`);
   }, 30000);
@@ -84,6 +118,17 @@ router.get('/events', (_req: Request, res: Response) => {
     clearInterval(heartbeat);
     clients.delete(res);
   });
+});
+
+// Settings
+router.get('/settings', (_req: Request, res: Response) => {
+  res.json(getSettings());
+});
+
+router.put('/settings', (req: Request, res: Response) => {
+  const { pushToken } = req.body;
+  writeJSON('settings.json', { pushToken });
+  res.json({ success: true });
 });
 
 export default router;

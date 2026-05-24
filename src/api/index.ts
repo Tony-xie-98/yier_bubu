@@ -37,4 +37,11 @@ export const api = {
   deleteDish: (id: string) => request<{ success: boolean }>(`/dishes/${id}`, {
     method: 'DELETE',
   }),
+
+  // Settings
+  getSettings: () => request<{ pushToken?: string }>('/orders/settings'),
+  updatePushToken: (pushToken: string) => request<{ success: boolean }>('/orders/settings', {
+    method: 'PUT',
+    body: JSON.stringify({ pushToken }),
+  }),
 };
