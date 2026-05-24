@@ -214,3 +214,23 @@
   font-size: 15px;
   font-weight: 600;
 }
+
+.settingsTest {
+  padding: 10px;
+  background: #f0f0f0;
+  color: #5D4037;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.testResult {
+  font-size: 13px;
+  text-align: center;
+  padding: 8px;
+  background: #FFF8F2;
+  border-radius: 8px;
+  color: #5D4037;
+  word-break: break-all;
+}

@@ -34,18 +34,21 @@ async function sendWxPush(order: Order) {
 
   try {
     console.log('[push] Sending to PushPlus...');
-    const res = await fetch('https://www.pushplus.plus/send', {
+    const res = await fetch('http://www.pushplus.plus/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: settings.pushToken,
         title: `🐻 一二下单啦！¥${order.totalPrice}`,
         content,
-        template: 'txt',
       }),
     });
-    const data = await res.json();
-    console.log('[push] PushPlus response:', JSON.stringify(data));
+    const data = await res.json() as { code: number; msg: string; data?: string };
+    if (data.code === 200) {
+      console.log('[push] Success:', data.msg);
+    } else {
+      console.error('[push] PushPlus error:', data.code, data.msg);
+    }
   } catch (err) {
     console.error('[push] Failed:', err);
   }
@@ -142,22 +145,25 @@ router.post('/test-push', async (_req: Request, res: Response) => {
     return;
   }
   try {
-    const result = await fetch('https://www.pushplus.plus/send', {
+    const result = await fetch('http://www.pushplus.plus/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: settings.pushToken,
         title: '🐻 一二布布 · 测试推送',
         content: '如果你收到这条消息，说明微信推送已配置成功！',
-        template: 'txt',
       }),
     });
-    const data = await result.json();
-    console.log('[push] Test result:', JSON.stringify(data));
-    res.json(data);
+    const data = await result.json() as { code: number; msg: string };
+    if (data.code === 200) {
+      res.json({ ok: true, msg: '推送成功！请查看微信' });
+    } else if (data.code === 905) {
+      res.json({ ok: false, msg: 'PushPlus 需要实名认证。请在 PushPlus 公众号完成实名后再试。' });
+    } else {
+      res.json({ ok: false, msg: `推送失败 (${data.code}): ${data.msg}` });
+    }
   } catch (err) {
-    console.error('[push] Test failed:', err);
-    res.status(500).json({ error: '推送失败' });
+    res.status(500).json({ ok: false, msg: '网络错误，请稍后重试' });
   }
 });
 

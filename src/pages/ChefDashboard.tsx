@@ -18,6 +18,7 @@ export default function ChefDashboard({ onGoBack, onManageDishes }: Props) {
   const [showSettings, setShowSettings] = useState(false);
   const [pushToken, setPushToken] = useState('');
   const [tokenSaved, setTokenSaved] = useState(false);
+  const [testResult, setTestResult] = useState('');
 
   const fetchOrders = useCallback(() => {
     api.getOrders().then(setOrders).catch(() => {});
@@ -34,6 +35,18 @@ export default function ChefDashboard({ onGoBack, onManageDishes }: Props) {
     await api.updatePushToken(pushToken.trim());
     setTokenSaved(true);
     setTimeout(() => setTokenSaved(false), 2000);
+  };
+
+  const testPush = async () => {
+    setTestResult('⏳');
+    try {
+      const res = await fetch('/api/orders/test-push', { method: 'POST' });
+      const data = await res.json();
+      setTestResult(data.ok ? '✅ ' + data.msg : '❌ ' + data.msg);
+    } catch {
+      setTestResult('❌ 网络错误');
+    }
+    setTimeout(() => setTestResult(''), 5000);
   };
 
   const handleNewOrder = useCallback((order: Order) => {
@@ -171,6 +184,10 @@ export default function ChefDashboard({ onGoBack, onManageDishes }: Props) {
               <button className={styles.settingsSave} onClick={saveToken}>
                 {tokenSaved ? '✅ 已保存' : '保存'}
               </button>
+              <button className={styles.settingsTest} onClick={testPush}>
+                📤 测试推送
+              </button>
+              {testResult && <div className={styles.testResult}>{testResult}</div>}
             </div>
           </div>
         </div>
