@@ -77,6 +77,17 @@ router.post('/', async (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
+// Settings (must be before /:id to avoid route conflict)
+router.get('/settings', (_req: Request, res: Response) => {
+  res.json(getSettings());
+});
+
+router.put('/settings', (req: Request, res: Response) => {
+  const { pushToken } = req.body;
+  writeJSON('settings.json', { pushToken });
+  res.json({ success: true });
+});
+
 // PUT /api/orders/:id
 router.put('/:id', (req: Request, res: Response) => {
   const { id } = req.params;
@@ -118,17 +129,6 @@ router.get('/events', (_req: Request, res: Response) => {
     clearInterval(heartbeat);
     clients.delete(res);
   });
-});
-
-// Settings
-router.get('/settings', (_req: Request, res: Response) => {
-  res.json(getSettings());
-});
-
-router.put('/settings', (req: Request, res: Response) => {
-  const { pushToken } = req.body;
-  writeJSON('settings.json', { pushToken });
-  res.json({ success: true });
 });
 
 export default router;
