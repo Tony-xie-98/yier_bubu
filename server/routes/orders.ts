@@ -21,31 +21,34 @@ const clients = new Set<Response>();
 
 async function sendWxPush(order: Order) {
   const settings = getSettings();
-  if (!settings.pushToken) return;
+  if (!settings.pushToken) {
+    console.log('[push] No token configured, skipping');
+    return;
+  }
 
-  const itemsText = order.items
-    .map(i => `${i.name} ×${i.quantity}`)
-    .join('\n');
+  const content = [
+    ...order.items.map(i => `${i.name} ×${i.quantity} = ¥${i.price * i.quantity}`),
+    `合计：¥${order.totalPrice}`,
+    order.note ? `备注：${order.note}` : '',
+  ].filter(Boolean).join('\n');
 
   try {
-    await fetch('http://www.pushplus.plus/send', {
+    console.log('[push] Sending to PushPlus...');
+    const res = await fetch('https://www.pushplus.plus/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         token: settings.pushToken,
         title: `🐻 一二下单啦！¥${order.totalPrice}`,
-        content: [
-          `## 🛒 新订单`,
-          ``,
-          ...order.items.map(i => `- ${i.name} ×${i.quantity}  ¥${i.price * i.quantity}`),
-          ``,
-          `**合计：¥${order.totalPrice}**`,
-          order.note ? `备注：${order.note}` : '',
-        ].join('\n'),
-        template: 'markdown',
+        content,
+        template: 'txt',
       }),
     });
-  } catch { /* push failed, ignore */ }
+    const data = await res.json();
+    console.log('[push] PushPlus response:', JSON.stringify(data));
+  } catch (err) {
+    console.error('[push] Failed:', err);
+  }
 }
 
 // GET /api/orders
@@ -129,6 +132,33 @@ router.get('/events', (_req: Request, res: Response) => {
     clearInterval(heartbeat);
     clients.delete(res);
   });
+});
+
+// POST /api/orders/test-push — test WeChat push
+router.post('/test-push', async (_req: Request, res: Response) => {
+  const settings = getSettings();
+  if (!settings.pushToken) {
+    res.status(400).json({ error: '未配置 PushPlus Token' });
+    return;
+  }
+  try {
+    const result = await fetch('https://www.pushplus.plus/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token: settings.pushToken,
+        title: '🐻 一二布布 · 测试推送',
+        content: '如果你收到这条消息，说明微信推送已配置成功！',
+        template: 'txt',
+      }),
+    });
+    const data = await result.json();
+    console.log('[push] Test result:', JSON.stringify(data));
+    res.json(data);
+  } catch (err) {
+    console.error('[push] Test failed:', err);
+    res.status(500).json({ error: '推送失败' });
+  }
 });
 
 export default router;
