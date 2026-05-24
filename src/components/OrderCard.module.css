@@ -1,0 +1,86 @@
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.time {
+  font-size: 13px;
+  color: #999;
+}
+
+.status {
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pending {
+  color: #f39c12;
+}
+
+.completed {
+  color: #27ae60;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.itemName {
+  flex: 1;
+}
+
+.itemQty {
+  color: #999;
+  font-size: 13px;
+}
+
+.itemPrice {
+  font-weight: 500;
+  min-width: 50px;
+  text-align: right;
+}
+
+.note {
+  font-size: 12px;
+  color: #aaa;
+  padding: 6px 0;
+  border-top: 1px solid #f5f5f5;
+  margin-bottom: 8px;
+}
+
+.total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  border-top: 1px solid #f5f5f5;
+  padding-top: 8px;
+}
+
+.totalPrice {
+  font-size: 18px;
+  font-weight: 700;
+  color: #C8815C;
+}
